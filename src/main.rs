@@ -2,11 +2,13 @@ use bevy::prelude::*;
 use rand::prelude::random;
 use bevy::core::FixedTimestep;
 
-const ARENA_WIDTH: u32 = 10;
-const ARENA_HEIGHT: u32 = 10;
+const ARENA_WIDTH: u32 = 20;
+const ARENA_HEIGHT: u32 = 20;
 const FOOD_COLOR: Color       = Color::hsla(23.0,0.8,0.6,0.6);
 const SNAKE_HEAD_COLOR: Color = Color::hsla(183.0,0.3,0.7,0.6);
 const BACKGROUND_COLOR: Color = Color::hsl(183.0,0.3,0.1);
+
+const CELL_SIZE: f32 = 0.4;
 
 fn setup_camera(mut commands: Commands) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
@@ -47,7 +49,7 @@ fn spawn_snake(mut commands: Commands) {
         })
         .insert(SnakeHead)
         .insert(Position { x: 3, y: 3 })
-        .insert(Size::square(0.8));
+        .insert(Size::square(CELL_SIZE));
 }
 
 fn size_scaling(windows: Res<Windows>, mut q: Query<(&Size, &mut Transform)>) {
@@ -113,15 +115,15 @@ fn food_spawner(mut commands: Commands) {
             x: (random::<f32>() * ARENA_WIDTH as f32) as i32,
             y: (random::<f32>() * ARENA_HEIGHT as f32) as i32,
         })
-        .insert(Size::square(0.8));
+        .insert(Size::square(CELL_SIZE));
 }
 
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
             title: "Snake!".to_string(),
-            width: 500.0,
-            height: 500.0,
+            width: 800.0,
+            height: 800.0,
             ..default()
         })
         .insert_resource(ClearColor(BACKGROUND_COLOR))
