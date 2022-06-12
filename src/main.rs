@@ -1,7 +1,10 @@
 use bevy::prelude::*;
+use rand::prelude::random;
+use bevy::core::FixedTimestep;
 
 const ARENA_WIDTH: u32 = 10;
 const ARENA_HEIGHT: u32 = 10;
+const FOOD_COLOR: Color       = Color::hsla(23.0,0.8,0.6,0.6);
 const SNAKE_HEAD_COLOR: Color = Color::hsla(183.0,0.3,0.7,0.6);
 const BACKGROUND_COLOR: Color = Color::hsl(183.0,0.3,0.1);
 
@@ -93,6 +96,26 @@ fn snake_movement(
     }
 }
 
+#[derive(Component)]
+struct Food;
+
+fn food_spawner(mut commands: Commands) {
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite: Sprite {
+                color: FOOD_COLOR,
+                ..default()
+            },
+            ..default()
+        })
+        .insert(Food)
+        .insert(Position {
+            x: (random::<f32>() * ARENA_WIDTH as f32) as i32,
+            y: (random::<f32>() * ARENA_HEIGHT as f32) as i32,
+        })
+        .insert(Size::square(0.8));
+}
+
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
@@ -110,6 +133,11 @@ fn main() {
             SystemSet::new()
                 .with_system(position_translation)
                 .with_system(size_scaling),
+        )
+        .add_system_set(
+            SystemSet::new()
+                .with_run_criteria(FixedTimestep::step(2.0))
+                .with_system(food_spawner),
         )
         .add_plugins(DefaultPlugins)
         .run();
