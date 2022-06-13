@@ -69,6 +69,9 @@ struct SnakeSegment;
 #[derive(Default, Deref, DerefMut)]
 struct SnakeSegments(Vec<Entity>);
 
+#[derive(Default)]
+struct LastTailPosition(Option<Position>);
+
 fn spawn_snake(mut commands: Commands, mut segments: ResMut<SnakeSegments>) {
     *segments = SnakeSegments(vec![
         commands
@@ -156,7 +159,8 @@ fn snake_movement_input(
 fn snake_movement(
     segments: ResMut<SnakeSegments>,
     mut heads: Query<(Entity, &SnakeHead)>,
-    mut positions: Query<&mut Position>
+    mut positions: Query<&mut Position>,
+    mut last_tail_position: ResMut<LastTailPosition>
 ) {
     if let Some((head_entity, head)) = heads.iter_mut().next() {
         let segment_positions = segments
@@ -184,6 +188,36 @@ fn snake_movement(
             .for_each(|(pos, segment)| {
                 *positions.get_mut(*segment).unwrap() = *pos;
             });
+        *last_tail_position = LastTailPosition(Some(*segment_positions.last().unwrap()));
+    }
+}
+
+struct GrowthEvent;
+
+fn snake_eating(
+    mut commands: Commands,
+    mut growth_writer: EventWriter<GrowthEvent>,
+    food_positions: Query<(Entity, &Position), With<Food>>,
+    head_positions: Query<&Position, With<SnakeHead>>
+) {
+    for head_pos in head_positions.iter() {
+        for (ent, food_pos) in food_positions.iter() {
+            if food_pos == head_pos {
+                commands.entity(ent).despawn();
+                growth_writer.send(GrowthEvent);
+            }
+        }
+    }
+}
+
+fn snake_growth(
+    commands: Commands,
+    last_tail_position: Res<LastTailPosition>,
+    mut segments: ResMut<SnakeSegments>,
+    mut growth_reader: EventReader<GrowthEvent>
+) {
+    if growth_reader.iter().next().is_some() {
+        segments.push(spawn_segment(commands, last_tail_position.0.unwrap()));
     }
 }
 
@@ -217,6 +251,7 @@ fn main() {
         })
         .insert_resource(ClearColor(BACKGROUND_COLOR))
         .insert_resource(SnakeSegments::default())
+        .insert_resource(LastTailPosition::default())
         .add_startup_system(setup_camera)
         .add_startup_system(spawn_snake)
         .add_system(snake_movement_input.before(snake_movement))
@@ -229,7 +264,9 @@ fn main() {
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(FixedTimestep::step(0.200))
-                .with_system(snake_movement),
+                .with_system(snake_movement)
+                .with_system(snake_eating.after(snake_movement))
+                .with_system(snake_growth.after(snake_eating)),
         )
         .add_system_set(
             SystemSet::new()
@@ -237,5 +274,6 @@ fn main() {
                 .with_system(food_spawner),
         )
         .add_plugins(DefaultPlugins)
+        .add_event::<GrowthEvent>()
         .run();
 }
