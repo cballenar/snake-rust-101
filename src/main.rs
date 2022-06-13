@@ -2,10 +2,12 @@ use bevy::prelude::*;
 use rand::prelude::random;
 use bevy::core::FixedTimestep;
 
-const ARENA_WIDTH: u32 = 20;
-const ARENA_HEIGHT: u32 = 20;
+const ARENA_WIDTH: i32 = 20;
+const ARENA_HEIGHT: i32 = 20;
+const STARTING_POINT: i32 = 20/2;
 const FOOD_COLOR: Color       = Color::hsla(23.0,0.8,0.6,0.6);
-const SNAKE_HEAD_COLOR: Color = Color::hsla(183.0,0.3,0.7,0.6);
+const SNAKE_HEAD_COLOR: Color = Color::hsla(183.0,0.3,0.7,0.8);
+const SNAKE_SEGMENT_COLOR: Color = Color::hsla(183.0,0.3,0.7,0.6);
 const BACKGROUND_COLOR: Color = Color::hsl(183.0,0.3,0.1);
 
 const CELL_SIZE: f32 = 0.4;
@@ -59,20 +61,46 @@ struct SnakeHead {
     direction: Direction,
 }
 
-fn spawn_snake(mut commands: Commands) {
+#[derive(Component)]
+struct SnakeSegment;
+
+#[derive(Default, Deref, DerefMut)]
+struct SnakeSegments(Vec<Entity>);
+
+fn spawn_snake(mut commands: Commands, mut segments: ResMut<SnakeSegments>) {
+    *segments = SnakeSegments(vec![
+        commands
+            .spawn_bundle(SpriteBundle {
+                sprite: Sprite {
+                    color: SNAKE_HEAD_COLOR,
+                    ..default()
+                },
+                ..default()
+            })
+            .insert(SnakeHead {
+                direction: Direction::Up,
+            })
+            .insert(SnakeSegment)
+            .insert(Position { x: STARTING_POINT, y: STARTING_POINT })
+            .insert(Size::square(CELL_SIZE))
+            .id(),
+        spawn_segment(commands, Position{ x: STARTING_POINT, y: STARTING_POINT-1 }),
+    ])
+}
+
+fn spawn_segment(mut commands: Commands, position: Position)->Entity {
     commands
         .spawn_bundle(SpriteBundle {
             sprite: Sprite {
-                color: SNAKE_HEAD_COLOR,
+                color: SNAKE_SEGMENT_COLOR,
                 ..default()
             },
             ..default()
         })
-        .insert(SnakeHead {
-            direction: Direction::Up,
-        })
-        .insert(Position { x: 3, y: 3 })
-        .insert(Size::square(CELL_SIZE));
+        .insert(SnakeSegment)
+        .insert(position)
+        .insert(Size::square(CELL_SIZE))
+        .id()
 }
 
 fn size_scaling(windows: Res<Windows>, mut q: Query<(&Size, &mut Transform)>) {
@@ -173,6 +201,7 @@ fn main() {
             ..default()
         })
         .insert_resource(ClearColor(BACKGROUND_COLOR))
+        .insert_resource(SnakeSegments::default())
         .add_startup_system(setup_camera)
         .add_startup_system(spawn_snake)
         .add_system(snake_movement_input.before(snake_movement))
