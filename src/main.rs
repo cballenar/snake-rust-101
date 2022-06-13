@@ -2,15 +2,17 @@ use bevy::prelude::*;
 use rand::prelude::random;
 use bevy::core::FixedTimestep;
 
-const ARENA_WIDTH: i32 = 20;
-const ARENA_HEIGHT: i32 = 20;
-const STARTING_POINT: i32 = 20/2;
-const FOOD_COLOR: Color       = Color::hsla(23.0,0.8,0.6,0.6);
-const SNAKE_HEAD_COLOR: Color = Color::hsla(183.0,0.3,0.7,0.8);
-const SNAKE_SEGMENT_COLOR: Color = Color::hsla(183.0,0.3,0.7,0.6);
-const BACKGROUND_COLOR: Color = Color::hsl(183.0,0.3,0.1);
+const SCALE:          i32 = 40;
+const ARENA_WIDTH:    i32 = SCALE;
+const ARENA_HEIGHT:   i32 = SCALE;
+const STARTING_POINT: i32 = SCALE/2;
+const SEGMENT_SIZE:   f32 = 0.9;
 
-const CELL_SIZE: f32 = 0.4;
+const FOOD_COLOR: Color          = Color::hsla(23.0,0.8,0.6,0.6);
+const SNAKE_HEAD_COLOR: Color    = Color::hsla(183.0,0.3,0.7,0.9);
+const SNAKE_SEGMENT_COLOR: Color = Color::hsla(183.0,0.3,0.7,0.5);
+const BACKGROUND_COLOR: Color    = Color::hsl(183.0,0.3,0.1);
+
 
 fn setup_camera(mut commands: Commands) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
@@ -82,7 +84,7 @@ fn spawn_snake(mut commands: Commands, mut segments: ResMut<SnakeSegments>) {
             })
             .insert(SnakeSegment)
             .insert(Position { x: STARTING_POINT, y: STARTING_POINT })
-            .insert(Size::square(CELL_SIZE))
+            .insert(Size::square(SEGMENT_SIZE))
             .id(),
         spawn_segment(commands, Position{ x: STARTING_POINT, y: STARTING_POINT-1 }),
     ])
@@ -99,7 +101,7 @@ fn spawn_segment(mut commands: Commands, position: Position)->Entity {
         })
         .insert(SnakeSegment)
         .insert(position)
-        .insert(Size::square(CELL_SIZE))
+        .insert(Size::square(SEGMENT_SIZE))
         .id()
 }
 
@@ -202,7 +204,7 @@ fn food_spawner(mut commands: Commands) {
             x: (random::<f32>() * ARENA_WIDTH as f32) as i32,
             y: (random::<f32>() * ARENA_HEIGHT as f32) as i32,
         })
-        .insert(Size::square(CELL_SIZE));
+        .insert(Size::square(SEGMENT_SIZE));
 }
 
 fn main() {
