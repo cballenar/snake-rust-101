@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 bevy = { version = "0.7", features = ["dynamic"] }
 rand = "0.7"
+bevy_particle_systems = "0.4"

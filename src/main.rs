@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use rand::prelude::random;
 use bevy::core::FixedTimestep;
+use bevy_particle_systems::*;
 
 const SCALE:          i32 = 40;
 const ARENA_WIDTH:    i32 = SCALE;
@@ -269,6 +270,28 @@ fn game_over(
     }
 }
 
+fn spawn_particle_system(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands
+    .spawn_bundle(ParticleSystemBundle {
+        particle_system: ParticleSystem {
+            max_particles: 10_000,
+            default_sprite: asset_server.load("px.png"),
+            spawn_rate_per_second: 25.0.into(),
+            initial_velocity:JitteredValue:: jittered(3.0, -1.0..1.0),
+            lifetime:JitteredValue::jittered(8.0, -2.0..2.0),
+            color: ColorOverTime::Gradient(Gradient::new(vec![
+                ColorPoint::new(Color::WHITE, 0.0),
+                ColorPoint::new(Color::rgba(0.0,0.0,1.0,0.0), 1.0),
+            ])),
+            looping: true,
+            system_duration_seconds: 10.0,
+            ..ParticleSystem::default()
+        },
+        ..ParticleSystemBundle::default()
+    })
+    .insert(Playing);
+}
+
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
@@ -303,6 +326,8 @@ fn main() {
         )
         .add_system(game_over.after(snake_movement))
         .add_plugins(DefaultPlugins)
+        .add_plugin(ParticleSystemPlugin::default())
+        .add_startup_system(spawn_particle_system)
         .add_event::<GameOverEvent>()
         .add_event::<GrowthEvent>()
         .run();
