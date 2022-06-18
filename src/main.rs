@@ -186,10 +186,10 @@ fn snake_movement(
                 head_pos.x -= 1;
             }
         };
-        if head_pos.x < 0
-            || head_pos.y < 0
-            || head_pos.x as i32 >= ARENA_WIDTH
-            || head_pos.y as i32 >= ARENA_HEIGHT
+        if head_pos.x < 1
+            || head_pos.y < 1
+            || head_pos.x as i32 >= ARENA_WIDTH-1
+            || head_pos.y as i32 >= ARENA_HEIGHT-1
         {
             game_over_writer.send(GameOverEvent);
         }
@@ -238,7 +238,7 @@ fn snake_growth(
 #[derive(Component)]
 struct Brick;
 
-fn brick_spawner(mut commands: Commands, position: Position)->Entity {
+fn brick_spawner(commands: &mut Commands, position: Position)->Entity {
     commands
         .spawn_bundle(SpriteBundle {
             sprite: Sprite {
@@ -256,12 +256,12 @@ fn brick_spawner(mut commands: Commands, position: Position)->Entity {
 #[derive(Default, Deref, DerefMut)]
 struct Wall(Vec<Entity>);
 
-fn wall_builder(commands: Commands, mut wall: ResMut<Wall>) {
+fn wall_builder(mut commands: Commands, mut wall: ResMut<Wall>) {
     for coordinate in 0..ARENA_WIDTH {
-        wall.push(brick_spawner(commands,Position {
-            x: coordinate as i32,
-            y: coordinate as i32,
-        }));
+        wall.push(brick_spawner(&mut commands, Position { x: coordinate as i32, y: 0 as i32 }));
+        wall.push(brick_spawner(&mut commands, Position { x: ARENA_WIDTH-1 as i32, y: coordinate as i32 }));
+        wall.push(brick_spawner(&mut commands, Position { x: coordinate as i32, y: ARENA_WIDTH-1 as i32 }));
+        wall.push(brick_spawner(&mut commands, Position { x: 0 as i32, y: coordinate as i32 }));
     }
 }
 
