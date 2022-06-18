@@ -8,10 +8,11 @@ const ARENA_HEIGHT:   i32 = SCALE;
 const STARTING_POINT: i32 = SCALE/2;
 const SEGMENT_SIZE:   f32 = 0.9;
 
-const FOOD_COLOR: Color          = Color::hsla(23.0,0.8,0.6,0.6);
-const SNAKE_HEAD_COLOR: Color    = Color::hsla(183.0,0.3,0.7,0.9);
+const BRICK_COLOR:         Color = Color::hsla(333.0,0.8,0.6,0.6);
+const FOOD_COLOR:          Color = Color::hsla(23.0,0.8,0.6,0.6);
+const SNAKE_HEAD_COLOR:    Color = Color::hsla(183.0,0.3,0.7,0.9);
 const SNAKE_SEGMENT_COLOR: Color = Color::hsla(183.0,0.3,0.7,0.5);
-const BACKGROUND_COLOR: Color    = Color::hsl(183.0,0.3,0.1);
+const BACKGROUND_COLOR:    Color = Color::hsl(183.0,0.3,0.1);
 
 
 fn setup_camera(mut commands: Commands) {
@@ -235,6 +236,36 @@ fn snake_growth(
 }
 
 #[derive(Component)]
+struct Brick;
+
+fn brick_spawner(mut commands: Commands, position: Position)->Entity {
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite: Sprite {
+                color: BRICK_COLOR,
+                ..default()
+            },
+            ..default()
+        })
+        .insert(Brick)
+        .insert(position)
+        .insert(Size::square(SEGMENT_SIZE))
+        .id()
+}
+
+#[derive(Default, Deref, DerefMut)]
+struct Wall(Vec<Entity>);
+
+fn wall_builder(commands: Commands, mut wall: ResMut<Wall>) {
+    for coordinate in 0..ARENA_WIDTH {
+        wall.push(brick_spawner(commands,Position {
+            x: coordinate as i32,
+            y: coordinate as i32,
+        }));
+    }
+}
+
+#[derive(Component)]
 struct Food;
 
 fn food_spawner(mut commands: Commands) {
@@ -281,6 +312,8 @@ fn main() {
         .insert_resource(SnakeSegments::default())
         .insert_resource(LastTailPosition::default())
         .add_startup_system(setup_camera)
+        .insert_resource(Wall::default())
+        .add_startup_system(wall_builder)
         .add_startup_system(spawn_snake)
         .add_system(snake_movement_input.before(snake_movement))
         .add_system_set_to_stage(
